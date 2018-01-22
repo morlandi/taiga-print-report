@@ -3,7 +3,6 @@ import argparse
 import datetime
 from taiga import TaigaAPI
 
-
 def default_doc_style():
     return """
 html, body {
@@ -131,7 +130,7 @@ def render_user_stories(project, epic, user_stories, summary=False):
                 text += '"%s",' % epic.subject
             text += '"%s",%d,"%s",%.1f\n' % (
                 user_story.milestone_name if user_story.milestone_name is not None else '',
-                user_story.id,
+                user_story.ref,
                 user_story.subject.replace('"', '""'),
                 user_story.total_points if user_story.total_points else 0.0,
             )
@@ -184,7 +183,7 @@ def print_project(host, username, password, project_slug_or_name, summary, copyr
                 print_HTML_doc_opener(host, project)
             else:
                 header = '' if len(epics) <= 0 else "Epic;"
-                header += 'Milestone;Id;User_story;Points'
+                header += 'Milestone;Ref;User_story;Points'
                 print(header)
 
             if len(epics) <= 0:
@@ -193,7 +192,7 @@ def print_project(host, username, password, project_slug_or_name, summary, copyr
             else:
                 if not summary: print('<ul class="epic_list">')
                 for epic in epics:
-                    user_stories = epic.list_user_stories()
+                    user_stories = epic.list_user_stories(pagination=False, order_by="epic_order")
                     print(render_user_stories(project, epic, user_stories, summary=summary))
                 if not summary: print('</ul>')
 
