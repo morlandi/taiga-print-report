@@ -1,2 +1,2 @@
 #python-taiga
-https://github.com/morlandi/python-taiga.git
+git+https://github.com/morlandi/python-taiga.git
