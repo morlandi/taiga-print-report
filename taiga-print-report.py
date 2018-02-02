@@ -6,7 +6,7 @@ from taiga import TaigaAPI
 def default_doc_style():
     return """
 html, body {
-    max-width: 100%%;
+    max-width: 100%;
     overflow-x: hidden;
 }
 body {
@@ -24,7 +24,7 @@ body {
     border: 2px solid #006699;
     color: #006699;
     text-align: center;
-    font-size: 140%%;
+    font-size: 140%;
 }
 .user_story_list {
     list-style-type: none;
@@ -33,10 +33,10 @@ body {
 .user_story_item > .subject {
     text-align: left;
     color: #006699;
-    font-size: 140%%;
+    font-size: 140%;
 }
 img {
-    width: 90%%;
+    width: 90%;
     text-align: center;
     padding: 20px;
 }
