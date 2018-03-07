@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 import argparse
 import datetime
+
+# LOCAL_MODULES = [
+#     '/Users/morlandi/src2/github_public/python-taiga',
+# ]
+
+# import sys
+# for local_module in LOCAL_MODULES:
+#     sys.path.insert(0, local_module)
+#     sys.stderr.write('\x1b[1;36;40m   Using local module: "%s"   \x1b[0m' % local_module)
+
 from taiga import TaigaAPI
+from taiga.models import Milestone
+
 
 def default_doc_style():
     return """
@@ -13,14 +25,21 @@ body {
     font-family: arial;
     padding: 20px;
 }
-.epic_list {
+.project-title {
+    color: #006699;
+}
+.wiki_page_list {
     list-style-type: none;
     padding-left: 0;
 }
-.epic_item {
+.section_list {
+    list-style-type: none;
+    padding-left: 0;
+}
+.section_item {
     page-break-after: always;
 }
-.epic_item > .subject {
+.section_item > .subject {
     border: 2px solid #006699;
     color: #006699;
     text-align: center;
@@ -51,6 +70,20 @@ header {
     border-bottom: 1px solid gray;
     padding: 10px;
 }
+.discreet {
+    color: #aaa;
+}
+table {
+    border-collapse: collapse;
+}
+table th,
+table td {
+    border: 1px solid #999;
+    padding: 2px;
+}
+.wiki_page_item .description h1 {
+    color: #006699;
+}
 """;
 
 
@@ -69,8 +102,8 @@ def print_HTML_doc_opener(host, project):
   </head>
   <body>
     <header>
-        <h3 class="title">{title}</h3>
-        <div class="subtitle">{subtitle}</div>
+        <h1 class="project-title">{title}</h1>
+        <div class="project-subtitle">{subtitle}</div>
     </header>
     <article class="content">
 """.format(host=host, title=project.name, subtitle=project.description, style=default_doc_style()))
@@ -109,14 +142,25 @@ def render_item(item_class, item, extra_html='', indent=0):
         ... extra_html ...
     </li>
     """
-    html = """
+    if isinstance(item, Milestone):
+        html = """
 {indent}<li class="{item_class}">
 {indent}    <h1 class="subject">{subject}</h1>
 {indent}    <div class="description">{description}</div>
 {indent}    {extra_html}
 {indent}</li>
-""".format(item_class=item_class, subject=item.subject, description=item.description_html,
+""".format(item_class=item_class, subject=item.name, description='',
     extra_html=extra_html, indent=' ' * (indent * 4))
+    else:
+        html = """
+{indent}<li class="{item_class}">
+{indent}    <h1 class="subject">{subject} <span class="discreet">(#{ref})</span></h1>
+{indent}    <div class="description">{description}</div>
+{indent}    {extra_html}
+{indent}</li>
+""".format(item_class=item_class, subject=item.subject, ref=item.ref, description=item.description_html,
+    extra_html=extra_html, indent=' ' * (indent * 4))
+
     return html
 
 
@@ -127,7 +171,7 @@ def render_user_stories(project, epic, user_stories, summary=False):
         text = ''
         for user_story in user_stories:
             if epic:
-                text += '"%s",' % epic.subject
+                text += '"%s",' % str(epic)
             text += '"%s",%d,"%s",%.1f\n' % (
                 user_story.milestone_name if user_story.milestone_name is not None else '',
                 user_story.ref,
@@ -145,13 +189,34 @@ def render_user_stories(project, epic, user_stories, summary=False):
 
     # if epic has been specified, wrap user story list inside an epic item
     if epic:
-        item = epic if summary else project.get_epic_by_ref(epic.ref)
-        html = render_item("epic_item", item, extra_html=html, indent=1)
+        #item = epic if summary else project.get_epic_by_ref(epic.ref)
+        try:
+            item = project.get_epic_by_ref(epic.ref)
+        except:
+            item = epic
+        html = render_item("section_item", item, extra_html=html, indent=1)
 
     return html
 
 
-def print_project(host, username, password, project_slug_or_name, summary, copyright):
+def render_wiki_pages(project):
+    html = ''
+    wiki_pages = project.list_wikipages()
+    if len(wiki_pages) > 0:
+        indent = 1
+        html = '<ul class="wiki_page_list">'
+        for wiki_page in wiki_pages:
+            html += """
+{indent}<li class="wiki_page_item">
+{indent}    <div class="description">{description}</div>
+{indent}</li>
+""".format(description=wiki_page.html, indent=' ' * (indent * 4))
+        html += ' ' * 8 + '</ul>'
+    return html
+
+
+def print_project(host, username, password, project_slug_or_name, summary,
+    include_wiki_pages, copyright, group_by_epics):
 
     def find_project(project, project_slug_or_name):
         for p in projects:
@@ -163,6 +228,11 @@ def print_project(host, username, password, project_slug_or_name, summary, copyr
             except:
                 pass
         return None
+
+    def filter_user_stories(user_stories, ref):
+        if ref is not None:
+            user_stories = [u.ref for u in user_stories if u.ref==ref]
+        return user_stories
 
     api = TaigaAPI(host=host)
     api.auth(username=username, password=password)
@@ -177,24 +247,68 @@ def print_project(host, username, password, project_slug_or_name, summary, copyr
             print('Project "%s" not found' % project_slug_or_name)
         else:
 
-            epics = project.list_epics()
-
             if not summary:
                 print_HTML_doc_opener(host, project)
             else:
-                header = '' if len(epics) <= 0 else "Epic;"
-                header += 'Milestone;Ref;User_story;Points'
+                #header = '' if len(epics) <= 0 else "Epic;"
+                header = 'Epic;Milestone;Ref;User_story;DePoints'
                 print(header)
 
-            if len(epics) <= 0:
+            if include_wiki_pages and not summary:
+                print(render_wiki_pages(project))
+
+            # List Sections (either Milestones or Epics)
+            sections = None
+            if group_by_epics:
+                sections = project.list_epics()
+            else:
+                sections = project.list_milestones(order_by="estimated_start")
+
+            if len(sections) <= 0:
+                # List all user stories
                 user_stories = project.list_user_stories()
                 print(render_user_stories(project, None, user_stories, summary=summary))
             else:
-                if not summary: print('<ul class="epic_list">')
-                for epic in epics:
-                    user_stories = epic.list_user_stories(pagination=False, order_by="epic_order")
-                    print(render_user_stories(project, epic, user_stories, summary=summary))
+                # Navigate sections
+                if not summary: print('<ul class="section_list">')
+                for section in sections:
+                    try:
+                        user_stories = [us for us in section.user_stories]
+                        # Try to sort by sprint order
+                        try:
+                            user_stories = sorted(user_stories, key=lambda x: x.sprint_order)
+                        except:
+                            pass
+                    except AttributeError:
+                        user_stories = section.list_user_stories(pagination=False, order_by="epic_order")
+                    print(render_user_stories(project, section, user_stories, summary=summary))
                 if not summary: print('</ul>')
+
+            # epics = project.list_epics()
+            # # if epic_filter is not None:
+            # #     epics = [e for e in epics if e.ref==epic_filter]
+
+            # if not summary:
+            #     print_HTML_doc_opener(host, project)
+            # else:
+            #     header = '' if len(epics) <= 0 else "Epic;"
+            #     header += 'Milestone;Ref;User_story;Points'
+            #     print(header)
+
+            # if include_wiki_pages and not summary:
+            #     print(render_wiki_pages(project))
+
+            # if len(epics) <= 0 or user_story_filter is not None:
+            #     user_stories = project.list_user_stories()
+            #     if user_story_filter is not None:
+            #         user_stories = [u for u in user_stories if u.ref==user_story_filter]
+            #     print(render_user_stories(project, None, user_stories, summary=summary))
+            # else:
+            #     if not summary: print('<ul class="section_list">')
+            #     for epic in epics:
+            #         user_stories = epic.list_user_stories(pagination=False, order_by="epic_order")
+            #         print(render_user_stories(project, epic, user_stories, summary=summary))
+            #     if not summary: print('</ul>')
 
             if not summary:
                 print_HTML_doc_closer(copyright)
@@ -209,10 +323,15 @@ def main():
     parser.add_argument('password')
     parser.add_argument('--project', default='')
     parser.add_argument('--copyright', '-c', default='')
-    parser.add_argument('--summary', '-s', action='store_true')
+    parser.add_argument('--summary', '-s', action='store_true', help="Export CSV summary instead of HTML document")
+    parser.add_argument('--group-by-epics', '-e', action='store_true', help="Group user stories by epic (default is by Milestones")
+    parser.add_argument('--wiki', '-w', action='store_true', help="Include wiki pages")
+    # parser.add_argument('--us', type=int, metavar='USER_STORY_FILTER', help="Filter a specific user story")
+    # parser.add_argument('--ep', type=int, metavar='EPIC_FILTER', help="Filter a specific epic")
     args = parser.parse_args()
 
-    print_project(args.host, args.username, args.password, args.project, args.summary, args.copyright)
+    print_project(args.host, args.username, args.password, args.project, args.summary,
+        args.wiki, args.copyright, args.group_by_epics)
 
 if __name__ == "__main__":
     main()
