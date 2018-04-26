@@ -1,16 +1,4 @@
-#!/usr/bin/env python
-import argparse
 import datetime
-
-# LOCAL_MODULES = [
-#     '/Users/morlandi/src2/github_public/python-taiga',
-# ]
-
-# import sys
-# for local_module in LOCAL_MODULES:
-#     sys.path.insert(0, local_module)
-#     sys.stderr.write('\x1b[1;36;40m   Using local module: "%s"   \x1b[0m' % local_module)
-
 from taiga import TaigaAPI
 from taiga.models import Milestone
 
@@ -80,6 +68,9 @@ table th,
 table td {
     border: 1px solid #999;
     padding: 2px;
+}
+.wiki_page_item {
+    page-break-after: always;
 }
 .wiki_page_item .description h1 {
     color: #006699;
@@ -171,8 +162,8 @@ def render_user_stories(project, epic, user_stories, summary=False):
         text = ''
         for user_story in user_stories:
             if epic:
-                text += '"%s",' % str(epic)
-            text += '"%s",%d,"%s",%.1f\n' % (
+                text += '"%s";' % str(epic)
+            text += '"%s";%d;"%s";%.1f\n' % (
                 user_story.milestone_name if user_story.milestone_name is not None else '',
                 user_story.ref,
                 user_story.subject.replace('"', '""'),
@@ -216,7 +207,7 @@ def render_wiki_pages(project):
 
 
 def print_project(host, username, password, project_slug_or_name, summary,
-    include_wiki_pages, copyright, group_by_epics):
+    print_wiki_pages, copyright, group_by_epics):
 
     def find_project(project, project_slug_or_name):
         for p in projects:
@@ -245,24 +236,29 @@ def print_project(host, username, password, project_slug_or_name, summary,
         project = find_project(projects, project_slug_or_name)
         if project is None:
             print('Project "%s" not found' % project_slug_or_name)
+        elif print_wiki_pages:
+            print_HTML_doc_opener(host, project)
+            print(render_wiki_pages(project))
+            print_HTML_doc_closer(copyright)
         else:
 
             if not summary:
                 print_HTML_doc_opener(host, project)
             else:
                 #header = '' if len(epics) <= 0 else "Epic;"
-                header = 'Epic;Milestone;Ref;User_story;DePoints'
+                header = 'Epic;Milestone;Ref;User_story;Points'
                 print(header)
-
-            if include_wiki_pages and not summary:
-                print(render_wiki_pages(project))
 
             # List Sections (either Milestones or Epics)
             sections = None
             if group_by_epics:
                 sections = project.list_epics()
             else:
-                sections = project.list_milestones(order_by="estimated_start")
+                try:
+                    sections = project.list_milestones(order_by="estimated_start")
+                except Exception as e:
+                    print(e)
+                    import ipdb; ipdb.set_trace()
 
             if len(sections) <= 0:
                 # List all user stories
@@ -284,54 +280,5 @@ def print_project(host, username, password, project_slug_or_name, summary,
                     print(render_user_stories(project, section, user_stories, summary=summary))
                 if not summary: print('</ul>')
 
-            # epics = project.list_epics()
-            # # if epic_filter is not None:
-            # #     epics = [e for e in epics if e.ref==epic_filter]
-
-            # if not summary:
-            #     print_HTML_doc_opener(host, project)
-            # else:
-            #     header = '' if len(epics) <= 0 else "Epic;"
-            #     header += 'Milestone;Ref;User_story;Points'
-            #     print(header)
-
-            # if include_wiki_pages and not summary:
-            #     print(render_wiki_pages(project))
-
-            # if len(epics) <= 0 or user_story_filter is not None:
-            #     user_stories = project.list_user_stories()
-            #     if user_story_filter is not None:
-            #         user_stories = [u for u in user_stories if u.ref==user_story_filter]
-            #     print(render_user_stories(project, None, user_stories, summary=summary))
-            # else:
-            #     if not summary: print('<ul class="section_list">')
-            #     for epic in epics:
-            #         user_stories = epic.list_user_stories(pagination=False, order_by="epic_order")
-            #         print(render_user_stories(project, epic, user_stories, summary=summary))
-            #     if not summary: print('</ul>')
-
             if not summary:
                 print_HTML_doc_closer(copyright)
-
-
-def main():
-
-    # See: https://docs.python.org/2/library/argparse.html
-    parser = argparse.ArgumentParser(description='Extract printable report from Taiga Project')
-    parser.add_argument('host', help="remote host")
-    parser.add_argument('username')
-    parser.add_argument('password')
-    parser.add_argument('--project', default='')
-    parser.add_argument('--copyright', '-c', default='')
-    parser.add_argument('--summary', '-s', action='store_true', help="Export CSV summary instead of HTML document")
-    parser.add_argument('--group-by-epics', '-e', action='store_true', help="Group user stories by epic (default is by Milestones")
-    parser.add_argument('--wiki', '-w', action='store_true', help="Include wiki pages")
-    # parser.add_argument('--us', type=int, metavar='USER_STORY_FILTER', help="Filter a specific user story")
-    # parser.add_argument('--ep', type=int, metavar='EPIC_FILTER', help="Filter a specific epic")
-    args = parser.parse_args()
-
-    print_project(args.host, args.username, args.password, args.project, args.summary,
-        args.wiki, args.copyright, args.group_by_epics)
-
-if __name__ == "__main__":
-    main()

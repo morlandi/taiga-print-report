@@ -1,2 +1,0 @@
-#python-taiga
-git+https://github.com/morlandi/python-taiga.git
