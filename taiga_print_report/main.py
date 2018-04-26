@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--summary', '-s', action='store_true', help="Export CSV summary instead of HTML document")
     parser.add_argument('--group-by-epics', '-e', action='store_true', help="Group user stories by epic (default is by Milestones")
     parser.add_argument('--wiki', '-w', action='store_true', help="Print wiki pages")
+    parser.add_argument('--tasks', '-t', action='store_true', help="Include tasks")
     # parser.add_argument('--us', type=int, metavar='USER_STORY_FILTER', help="Filter a specific user story")
     # parser.add_argument('--ep', type=int, metavar='EPIC_FILTER', help="Filter a specific epic")
     args = parser.parse_args()
@@ -65,8 +66,13 @@ def main():
         project_slug_or_name=args.project,
         summary=args.summary,
         print_wiki_pages=args.wiki,
+        include_tasks=args.tasks,
         copyright=copyright,
         group_by_epics=args.group_by_epics,
+        task_headers=[
+            config.get('task_headers', '0').strip(),
+            config.get('task_headers', '1').strip(),
+        ],
     )
     sys.stderr.write('Done.\n')
 

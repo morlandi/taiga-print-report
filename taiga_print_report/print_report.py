@@ -60,6 +60,8 @@ header {
 }
 .discreet {
     color: #aaa;
+    font-size: 14px;
+    font-weight: normal;
 }
 table {
     border-collapse: collapse;
@@ -74,6 +76,16 @@ table td {
 }
 .wiki_page_item .description h1 {
     color: #006699;
+}
+.tasks_table {
+    width: 90%;
+    margin: 0 auto;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.tasks_table td,
+.tasks_table th {
+    padding: 6px 16px;
 }
 """;
 
@@ -155,7 +167,23 @@ def render_item(item_class, item, extra_html='', indent=0):
     return html
 
 
-def render_user_stories(project, epic, user_stories, summary=False):
+def render_tasks(project, tasks, task_headers):
+    html = ''
+    if len(tasks):
+        html = '<table class="tasks_table">'
+        if task_headers:
+            html += '<thead><tr>' + ''.join(['<th>%s</th>' % th for th in task_headers]) + '</tr></thead>'
+        html += '<tbody>'
+        for row in tasks:
+            task = project.get_task_by_ref(row.ref)
+            html += '<tr><td>{name} <span class="discreet">(#{ref})</span></td><td>{description}</td></tr>'.format(
+                ref=task.ref, name=task.subject, description=task.description_html,
+            )
+        html += '</tbody></table>'
+    return html
+
+
+def render_user_stories(project, epic, user_stories, summary=False, include_tasks=False, task_headers=[]):
 
     if summary:
         # Use CSV format instead of HTML
@@ -175,7 +203,14 @@ def render_user_stories(project, epic, user_stories, summary=False):
     html = '<ul class="user_story_list">'
     for user_story in user_stories:
         item = user_story if summary else project.get_userstory_by_ref(user_story.ref)
-        html += render_item("user_story_item", item, indent=3)
+
+        html_tasks = ''
+        if include_tasks:
+            tasks = item.list_tasks()
+            html_tasks = render_tasks(project, tasks, task_headers)
+
+        html += render_item("user_story_item", item, extra_html=html_tasks, indent=3)
+
     html += ' ' * 8 + '</ul>'
 
     # if epic has been specified, wrap user story list inside an epic item
@@ -207,7 +242,7 @@ def render_wiki_pages(project):
 
 
 def print_project(host, username, password, project_slug_or_name, summary,
-    print_wiki_pages, copyright, group_by_epics):
+    print_wiki_pages, copyright, group_by_epics, include_tasks, task_headers):
 
     def find_project(project, project_slug_or_name):
         for p in projects:
@@ -263,7 +298,8 @@ def print_project(host, username, password, project_slug_or_name, summary,
             if len(sections) <= 0:
                 # List all user stories
                 user_stories = project.list_user_stories()
-                print(render_user_stories(project, None, user_stories, summary=summary))
+                print(render_user_stories(project, None, user_stories, summary=summary,
+                    include_tasks=include_tasks, task_headers=task_headers))
             else:
                 # Navigate sections
                 if not summary: print('<ul class="section_list">')
@@ -277,7 +313,8 @@ def print_project(host, username, password, project_slug_or_name, summary,
                             pass
                     except AttributeError:
                         user_stories = section.list_user_stories(pagination=False, order_by="epic_order")
-                    print(render_user_stories(project, section, user_stories, summary=summary))
+                    print(render_user_stories(project, section, user_stories, summary=summary,
+                        include_tasks=include_tasks, task_headers=task_headers))
                 if not summary: print('</ul>')
 
             if not summary:

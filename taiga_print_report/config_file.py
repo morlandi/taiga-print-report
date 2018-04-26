@@ -13,6 +13,9 @@ host=HOST
 username=USERNAME
 password=PASSWORD
 copyright=YOUR COPYRIGHT HERE ...
+[task_headers]
+0=Task
+1=Description
 """
 
 def read_config_file():
