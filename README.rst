@@ -47,7 +47,7 @@ Usage
     usage: taiga_print_report [-h] [--host HOST] [--username USERNAME]
                               [--password PASSWORD] [--copyright COPYRIGHT]
                               [--project PROJECT] [--summary] [--group-by-epics]
-                              [--wiki]
+                              [--wiki] [--tasks]
 
     Extract printable report from Taiga Project
 
@@ -62,6 +62,7 @@ Usage
       --summary, -s         Export CSV summary instead of HTML document
       --group-by-epics, -e  Group user stories by epic (default is by Milestones)
       --wiki, -w            Print wiki pages
+      --tasks, -t           Include tasks
 
 
 Sample usages
