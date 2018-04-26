@@ -14,6 +14,12 @@ Istallation
     pip install git+https://github.com/morlandi/taiga-print-report
 
 
+Sample result (wiki print)
+--------------------------
+
+.. image:: etc/images/sample_result_wiki.png
+
+
 Config file
 -----------
 
