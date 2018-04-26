@@ -19,7 +19,7 @@ Config file
 
 A sample config file "~/.taiga_print_report.conf" is automatically created on first run.
 
-You should edit it to specify the list of testable apps.
+You should edit it to supply appropriate credentials.
 
 ::
 
