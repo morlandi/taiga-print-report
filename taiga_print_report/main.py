@@ -14,7 +14,7 @@ def check_python_taiga():
 A specific python-taiga fork is required;
 please manually install it as follows:
 
-$ pip install git+https://github.com/morlandi/python-taiga.git
+$ pip install git+https://github.com/morlandi/python-taiga.git@ef6aabf351e5470cce3b5b7e1ded75939f723cbd
 """)
         return False
     return True
@@ -42,7 +42,7 @@ def main():
 
     parser.add_argument('--project', default='')
     parser.add_argument('--summary', '-s', action='store_true', help="Export CSV summary instead of HTML document")
-    parser.add_argument('--group-by-epics', '-e', action='store_true', help="Group user stories by epic (default is by Milestones")
+    parser.add_argument('--group-by-epics', '-e', action='store_true', help="Group user stories by epic (default is by Milestones)")
     parser.add_argument('--wiki', '-w', action='store_true', help="Print wiki pages")
     parser.add_argument('--tasks', '-t', action='store_true', help="Include tasks")
     # parser.add_argument('--us', type=int, metavar='USER_STORY_FILTER', help="Filter a specific user story")

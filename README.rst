@@ -113,7 +113,7 @@ Tested with Python 3.6.
 At this moment requires a customized version of python-taiga,
 which adds the capability to extract project's Epics::
 
-    pip install git+https://github.com/morlandi/python-taiga.git
+    pip install git+https://github.com/morlandi/python-taiga.git@ef6aabf351e5470cce3b5b7e1ded75939f723cbd
 
 I'm willing to send a PR asap to fix this.
 

@@ -232,11 +232,13 @@ def render_wiki_pages(project):
         indent = 1
         html = '<ul class="wiki_page_list">'
         for wiki_page in wiki_pages:
-            html += """
+            if wiki_page.html:
+                html += """
 {indent}<li class="wiki_page_item">
+{indent}    <h1 class="subject">{slug}</h1>
 {indent}    <div class="description">{description}</div>
 {indent}</li>
-""".format(description=wiki_page.html, indent=' ' * (indent * 4))
+""".format(description=wiki_page.html, slug=wiki_page.slug, indent=' ' * (indent * 4))
         html += ' ' * 8 + '</ul>'
     return html
 
