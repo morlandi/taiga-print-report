@@ -86,6 +86,11 @@ table td {
 .tasks_table td,
 .tasks_table th {
     padding: 6px 16px;
+    vertical-align: top;
+}
+.tasks_table .subject {
+    color: #006699;
+    font-weight: bold;
 }
 """;
 
@@ -170,16 +175,40 @@ def render_item(item_class, item, extra_html='', indent=0):
 def render_tasks(project, tasks, task_headers):
     html = ''
     if len(tasks):
+
+        # html = '<table class="tasks_table">'
+        # if task_headers:
+        #     html += '<thead><tr>' + ''.join(['<th>%s</th>' % th for th in task_headers]) + '</tr></thead>'
+        # html += '<tbody>'
+        # for row in tasks:
+        #     task = project.get_task_by_ref(row.ref)
+        #     html += '<tr><td>{name} <span class="discreet">(#{ref})</span></td><td>{description}</td></tr>'.format(
+        #         ref=task.ref, name=task.subject, description=task.description_html,
+        #     )
+        # html += '</tbody></table>'
+
         html = '<table class="tasks_table">'
         if task_headers:
-            html += '<thead><tr>' + ''.join(['<th>%s</th>' % th for th in task_headers]) + '</tr></thead>'
+            html += '<thead><tr><th>' + ' e '.join(task_headers) + '</th></tr></thead>'
         html += '<tbody>'
         for row in tasks:
             task = project.get_task_by_ref(row.ref)
-            html += '<tr><td>{name} <span class="discreet">(#{ref})</span></td><td>{description}</td></tr>'.format(
+            html += """
+                <tr>
+                    <td>
+                        <p>
+                            <span class="subject">{name}</span> <span class="discreet">(#{ref})</span>
+                        </p>
+                        <p>
+                            {description}
+                        </p>
+                    </td>
+                </tr>
+            """.format(
                 ref=task.ref, name=task.subject, description=task.description_html,
             )
         html += '</tbody></table>'
+
     return html
 
 
@@ -197,6 +226,16 @@ def render_user_stories(project, epic, user_stories, summary=False, include_task
                 user_story.subject.replace('"', '""'),
                 user_story.total_points if user_story.total_points else 0.0,
             )
+
+            if include_tasks:
+                tasks = user_story.list_tasks()
+                for task in tasks:
+                    text += '"%s";%d;">    %s"\n' % (
+                        '',
+                        task.ref,
+                        task.subject.replace('"', '""'),
+                    )
+
         return text.strip()
 
     # Prepare user story list
@@ -283,7 +322,8 @@ def print_project(host, username, password, project_slug_or_name, summary,
                 print_HTML_doc_opener(host, project)
             else:
                 #header = '' if len(epics) <= 0 else "Epic;"
-                header = 'Epic;Milestone;Ref;User_story;Points'
+                header = 'Epic;' if group_by_epics else ''
+                header += 'Milestone;Ref;User_story;Points'
                 print(header)
 
             # List Sections (either Milestones or Epics)
@@ -295,7 +335,6 @@ def print_project(host, username, password, project_slug_or_name, summary,
                     sections = project.list_milestones(order_by="estimated_start")
                 except Exception as e:
                     print(e)
-                    import ipdb; ipdb.set_trace()
 
             if len(sections) <= 0:
                 # List all user stories
