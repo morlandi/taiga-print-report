@@ -150,24 +150,35 @@ def render_item(item_class, item, extra_html='', indent=0):
         ... extra_html ...
     </li>
     """
-    if isinstance(item, Milestone):
-        html = """
-{indent}<li class="{item_class}">
-{indent}    <h1 class="subject">{subject}</h1>
-{indent}    <div class="description">{description}</div>
-{indent}    {extra_html}
-{indent}</li>
-""".format(item_class=item_class, subject=item.name, description='',
-    extra_html=extra_html, indent=' ' * (indent * 4))
+
+    if isinstance(item, str):
+            html = """
+    {indent}<li class="{item_class}">
+    {indent}    <h1 class="subject">{subject}</h1>
+    {indent}    <div class="description">{description}</div>
+    {indent}    {extra_html}
+    {indent}</li>
+        """.format(item_class=item_class, subject=item, description='',
+            extra_html=extra_html, indent=' ' * (indent * 4))
     else:
-        html = """
-{indent}<li class="{item_class}">
-{indent}    <h1 class="subject">{subject} <span class="discreet">(#{ref})</span></h1>
-{indent}    <div class="description">{description}</div>
-{indent}    {extra_html}
-{indent}</li>
-""".format(item_class=item_class, subject=item.subject, ref=item.ref, description=item.description_html,
-    extra_html=extra_html, indent=' ' * (indent * 4))
+        if isinstance(item, Milestone):
+            html = """
+    {indent}<li class="{item_class}">
+    {indent}    <h1 class="subject">{subject}</h1>
+    {indent}    <div class="description">{description}</div>
+    {indent}    {extra_html}
+    {indent}</li>
+    """.format(item_class=item_class, subject=item.name, description='',
+        extra_html=extra_html, indent=' ' * (indent * 4))
+        else:
+            html = """
+    {indent}<li class="{item_class}">
+    {indent}    <h1 class="subject">{subject} <span class="discreet">(#{ref})</span></h1>
+    {indent}    <div class="description">{description}</div>
+    {indent}    {extra_html}
+    {indent}</li>
+    """.format(item_class=item_class, subject=item.subject, ref=item.ref, description=item.description_html,
+        extra_html=extra_html, indent=' ' * (indent * 4))
 
     return html
 
@@ -342,8 +353,11 @@ def print_project(host, username, password, project_slug_or_name, summary,
                 print(render_user_stories(project, None, user_stories, summary=summary,
                     include_tasks=include_tasks, task_headers=task_headers))
             else:
+
                 # Navigate sections
                 if not summary: print('<ul class="section_list">')
+
+                visited_us_ids = []
                 for section in sections:
                     try:
                         user_stories = [us for us in section.user_stories]
@@ -354,8 +368,17 @@ def print_project(host, username, password, project_slug_or_name, summary,
                             pass
                     except AttributeError:
                         user_stories = section.list_user_stories(pagination=False, order_by="epic_order")
+
+                    visited_us_ids += [us.id for us in user_stories]
                     print(render_user_stories(project, section, user_stories, summary=summary,
                         include_tasks=include_tasks, task_headers=task_headers))
+
+                # list orphan user stories
+                orphan_user_stories = [us for us in project.list_user_stories() if us.id not in visited_us_ids]
+                if orphan_user_stories:
+                    print(render_user_stories(project, "Unclassified", orphan_user_stories, summary=summary,
+                        include_tasks=include_tasks, task_headers=task_headers))
+
                 if not summary: print('</ul>')
 
             if not summary:
