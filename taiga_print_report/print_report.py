@@ -152,6 +152,7 @@ def render_item(item_class, item, extra_html='', indent=0):
     """
 
     if isinstance(item, str):
+
             html = """
     {indent}<li class="{item_class}">
     {indent}    <h1 class="subject">{subject}</h1>
@@ -160,8 +161,9 @@ def render_item(item_class, item, extra_html='', indent=0):
     {indent}</li>
         """.format(item_class=item_class, subject=item, description='',
             extra_html=extra_html, indent=' ' * (indent * 4))
-    else:
-        if isinstance(item, Milestone):
+
+    elif isinstance(item, Milestone):
+
             html = """
     {indent}<li class="{item_class}">
     {indent}    <h1 class="subject">{subject}</h1>
@@ -170,7 +172,9 @@ def render_item(item_class, item, extra_html='', indent=0):
     {indent}</li>
     """.format(item_class=item_class, subject=item.name, description='',
         extra_html=extra_html, indent=' ' * (indent * 4))
-        else:
+
+    else:
+
             html = """
     {indent}<li class="{item_class}">
     {indent}    <h1 class="subject">{subject} <span class="discreet">(#{ref})</span></h1>
